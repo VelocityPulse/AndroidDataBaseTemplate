@@ -6,7 +6,13 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.example.ftpnext.core.AppInfo;
 import com.example.ftpnext.core.LogManager;
+import com.example.ftpnext.database.FTPHostTable.FTPHostDAO;
+import com.example.ftpnext.database.FTPHostTable.IFTPHostSchema;
+import com.example.ftpnext.database.TableTest1.ITableTest1Schema;
 import com.example.ftpnext.database.TableTest1.TableTest1DAO;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DataBase {
 
@@ -15,7 +21,8 @@ public class DataBase {
 
     private static String TAG = "DATABASE : Database";
 
-    private static TableTest1DAO mTableTest1Dao;
+    private static TableTest1DAO sTableTest1Dao;
+    private static FTPHostDAO sFTPHostDAO;
 
     private static DataBase sSingleton = null;
     private static boolean sDataBaseIsOpen = false;
@@ -31,8 +38,12 @@ public class DataBase {
         return (sSingleton = new DataBase());
     }
 
-    public static TableTest1DAO getTableTest1Dao() {
-        return mTableTest1Dao;
+    public static TableTest1DAO getTableTest1DAO() {
+        return sTableTest1Dao;
+    }
+
+    public static FTPHostDAO getFTPHostDAO() {
+        return sFTPHostDAO;
     }
 
     public static void initDataDirectory() {
@@ -49,11 +60,17 @@ public class DataBase {
             return true;
 
         LogManager.info(TAG, "Open database");
-        mDataBaseOpenHelper = new DataBaseOpenHelper(iContext);
+
+        List<String> lTableSchemaToCreate = new ArrayList<>();
+        lTableSchemaToCreate.add(ITableTest1Schema.TABLE_CREATE);
+        lTableSchemaToCreate.add(IFTPHostSchema.TABLE_CREATE);
+
+        mDataBaseOpenHelper = new DataBaseOpenHelper(iContext, lTableSchemaToCreate);
         SQLiteDatabase lDataBase = mDataBaseOpenHelper.getWritableDatabase();
 
         //DAO list
-        mTableTest1Dao = new TableTest1DAO(lDataBase);
+        sTableTest1Dao = new TableTest1DAO(lDataBase);
+        sFTPHostDAO = new FTPHostDAO(lDataBase);
 
         return (sDataBaseIsOpen = true);
     }
