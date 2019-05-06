@@ -14,7 +14,7 @@ public abstract class ADataAccessObject<T extends ABaseTable> extends ADataBaseS
 
     private final String TAG = "DATABASE : Data Access Object";
     protected ContentValues mContentValues = null;
-    private Cursor mCursor = null;
+    protected Cursor mCursor = null;
 
     public ADataAccessObject(SQLiteDatabase iDataBase) {
         super(iDataBase);
@@ -24,13 +24,15 @@ public abstract class ADataAccessObject<T extends ABaseTable> extends ADataBaseS
 
     public abstract List<T> fetchAll();
 
-    public abstract boolean add(T iObject);
+    public abstract int add(T iObject);
 
     public abstract boolean update(T iObject);
 
     public abstract boolean deleteAll();
 
     public abstract boolean delete(int iId);
+
+    public abstract boolean delete(T iObject);
 
     public abstract void onUpgradeTable(int iOldVersion, int iNewVersion);
 
@@ -70,14 +72,20 @@ public abstract class ADataAccessObject<T extends ABaseTable> extends ADataBaseS
         return lList;
     }
 
-    protected boolean add(T iObject, String iTable) {
+    protected int add(T iObject, String iTable) {
         setContentValue(iObject);
 
         try {
-            return super.insert(iTable, mContentValues) > 0;
+            return (int) super.insert(iTable, mContentValues);
         } catch (SQLiteConstraintException iEx) {
-            return LogManager.error(TAG, "Add error: " + iEx.getMessage()); //error
+            LogManager.error(TAG, "Add error: " + iEx.getMessage());
+            return -1;
         }
+    }
+
+    protected boolean delete(int iId, String iTable, String iColumnDataBaseId) {
+        final String selection = " " + iColumnDataBaseId + " =" + iId;
+        return super.delete(iTable, selection, null) > 0;
     }
 
     protected boolean update(T iObject, int iId, String iTable, String iColumnId) {
