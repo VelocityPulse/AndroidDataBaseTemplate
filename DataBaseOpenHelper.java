@@ -23,13 +23,19 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase iDataBase) {
-        LogManager.info(TAG, "On Create DataBase");
+
+    }
+
+    @Override
+    public void onOpen(SQLiteDatabase iDataBase) {
+        LogManager.info(TAG, "On open DataBase");
 
         for (String lTableCreate : mTableSchemaToCreate) {
             iDataBase.execSQL(lTableCreate);
         }
 
         LogManager.info(TAG, "DataBase tables created");
+        super.onOpen(iDataBase);
     }
 
     @Override
@@ -67,7 +73,7 @@ public class DataBaseOpenHelper extends SQLiteOpenHelper {
             }
 
             DataBase.getTableTest1DAO().onUpgradeTable(mOldVersion, mNewVersion);
-            //todo : call all onUpgrade
+            //instruction : call all onUpgrade
 
             //this code explain how to update a table
 /*

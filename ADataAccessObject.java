@@ -40,12 +40,12 @@ public abstract class ADataAccessObject<T extends ABaseTable> extends ADataBaseS
 
     protected abstract T cursorToEntity(Cursor iCursor);
 
-    protected T fetchById(String iTable, int iId, String iColumnId, String[] iColumns) {
-        final String lSelectionArgs[] = {String.valueOf(iId)};
-        final String lSelection = iColumnId + " = ?";
+    protected T fetchById(String iTable, int iId, String iColumnDataBaseId, String[] iColumns) {
+        final String[] lSelectionArgs = {String.valueOf(iId)};
+        final String lSelection = iColumnDataBaseId + " = ?";
         T lObject = null;
 
-        mCursor = super.query(iTable, iColumns, lSelection, lSelectionArgs, iColumnId);
+        mCursor = super.query(iTable, iColumns, lSelection, lSelectionArgs, iColumnDataBaseId);
         if (mCursor != null) {
             mCursor.moveToFirst();
             while (!mCursor.isAfterLast()) {
@@ -57,10 +57,10 @@ public abstract class ADataAccessObject<T extends ABaseTable> extends ADataBaseS
         return lObject;
     }
 
-    protected List<T> fetchAll(String iTable, String[] iColumns, String iColumnId) {
+    protected List<T> fetchAll(String iTable, String[] iColumns, String iColumnDataBaseId) {
         List<T> lList = new ArrayList<>();
 
-        mCursor = super.query(iTable, iColumns, null, null, iColumnId);
+        mCursor = super.query(iTable, iColumns, null, null, iColumnDataBaseId);
         if (mCursor != null) {
             mCursor.moveToFirst();
             while (!mCursor.isAfterLast()) {
@@ -76,7 +76,9 @@ public abstract class ADataAccessObject<T extends ABaseTable> extends ADataBaseS
         setContentValue(iObject);
 
         try {
-            return (int) super.insert(iTable, mContentValues);
+            int lNewId = (int) super.insert(iTable, mContentValues);
+            iObject.setDataBaseId(lNewId);
+            return lNewId;
         } catch (SQLiteConstraintException iEx) {
             LogManager.error(TAG, "Add error: " + iEx.getMessage());
             return -1;
@@ -88,14 +90,19 @@ public abstract class ADataAccessObject<T extends ABaseTable> extends ADataBaseS
         return super.delete(iTable, selection, null) > 0;
     }
 
-    protected boolean update(T iObject, int iId, String iTable, String iColumnId) {
-        setContentValue(iObject);
+    protected boolean update(T iObject, int iId, String iTable, String iColumnDataBaseId) {
+        synchronized (ADataAccessObject.class) {
+            setContentValue(iObject);
 
-        try {
-            final String lSelection = " " + iColumnId + " = " + iId;
-            return super.update(iTable, mContentValues, lSelection, null) > 0;
-        } catch (SQLiteConstraintException iEx) {
-            return LogManager.error(TAG, "Update error : " + iEx.getMessage()); //error
+            try {
+                final String lSelection = iColumnDataBaseId + " = ?";
+                final String[] lSelectionArgs = {String.valueOf(iId)};
+
+                return super.update(iTable, mContentValues, lSelection, lSelectionArgs) > 0;
+            } catch (SQLiteConstraintException iEx) {
+                return LogManager.error(TAG, "Update error :\nThread : " +
+                        Thread.currentThread().getId() + "\n" + iEx.getMessage() + "\n" + iObject.toString()); //error
+            }
         }
     }
 }
